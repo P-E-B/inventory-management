@@ -74,6 +74,38 @@
           </table>
         </div>
       </div>
+
+      <div v-if="restockOrders.length" class="card">
+        <div class="card-header">
+          <h3 class="card-title">{{ t('orders.submittedRestock') }} ({{ restockOrders.length }})</h3>
+        </div>
+        <div class="table-container">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>{{ t('orders.table.orderNumber') }}</th>
+                <th>{{ t('orders.table.items') }}</th>
+                <th>{{ t('orders.table.totalCost') }}</th>
+                <th>{{ t('orders.table.leadTime') }}</th>
+                <th>{{ t('orders.table.expectedDelivery') }}</th>
+                <th>{{ t('orders.table.status') }}</th>
+                <th>{{ t('orders.table.created') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ro in restockOrders" :key="ro.id">
+                <td>{{ ro.order_number }}</td>
+                <td>{{ ro.items.length }}</td>
+                <td>{{ formatCurrency(ro.total_cost) }}</td>
+                <td>{{ ro.lead_time_days }} days</td>
+                <td>{{ formatDate(ro.expected_delivery) }}</td>
+                <td><span class="status-badge submitted">{{ ro.status }}</span></td>
+                <td>{{ formatDate(ro.created_date) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -95,6 +127,7 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
+    const restockOrders = ref([])
 
     // Use shared filters
     const {
@@ -109,7 +142,10 @@ export default {
       try {
         loading.value = true
         const filters = getCurrentFilters()
-        const fetchedOrders = await api.getOrders(filters)
+        const [fetchedOrders, fetchedRestockOrders] = await Promise.all([
+          api.getOrders(filters),
+          api.getRestockOrders()
+        ])
 
         // Sort orders by order_date (earliest first)
         orders.value = fetchedOrders.sort((a, b) => {
@@ -117,6 +153,7 @@ export default {
           const dateB = new Date(b.order_date)
           return dateA - dateB
         })
+        restockOrders.value = fetchedRestockOrders
       } catch (err) {
         error.value = 'Failed to load orders: ' + err.message
       } finally {
@@ -153,6 +190,10 @@ export default {
       })
     }
 
+    const formatCurrency = (value) => {
+      return currencySymbol.value + (value ?? 0).toLocaleString()
+    }
+
     onMounted(loadOrders)
 
     return {
@@ -160,9 +201,11 @@ export default {
       loading,
       error,
       orders,
+      restockOrders,
       getOrdersByStatus,
       getOrderStatusClass,
       formatDate,
+      formatCurrency,
       currencySymbol,
       translateProductName,
       translateCustomerName
@@ -275,5 +318,18 @@ export default {
 .item-meta {
   font-size: 0.813rem;
   color: #64748b;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.submitted {
+  background-color: #3b82f6;
+  color: #ffffff;
 }
 </style>
