@@ -40,6 +40,10 @@ cd client
 npm install && npm run dev
 ```
 
+## Code Style
+
+- **Always document non-obvious logic changes with comments** — explain the WHY (constraints, workarounds, business rules), not the WHAT
+
 ## Key Patterns
 
 **Filter System**: 4 filters (Time Period, Warehouse, Category, Order Status) apply to all data via query params
